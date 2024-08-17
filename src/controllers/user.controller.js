@@ -10,7 +10,7 @@ class UserControllers {
 
   create = async (req, res) => {
     try {
-      console.log("form post ", req.body);
+      // console.log(req.body);
       // Check if the email already exists
       const existingUser = await db.query(
         "SELECT * FROM users WHERE email = $1",
@@ -22,12 +22,12 @@ class UserControllers {
       }
       // hash password using bcrypt
       const hashedPassword = await GeneratePassword(req.body.password);
-      console.log(hashedPassword);
+      // console.log(hashedPassword);
 
       const result = await db.query(
         `INSERT INTO users (first_name, last_name, email, password, phone, dob, gender, address, created_at, updated_at) 
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()) 
-                RETURNING id, first_name, last_name, email, phone, dob, gender, address, created_at, updated_at`,
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) 
+                RETURNING id, first_name, last_name, email, phone, TO_CHAR(dob, 'YYYY/MM/DD') AS dob, gender, address, created_at, updated_at`,
         [
           req.body.first_name,
           req.body.last_name,
@@ -39,7 +39,7 @@ class UserControllers {
           req.body.address,
         ]
       );
-      console.log(result);
+      // console.log(result);
       const newUser = result.rows[0];
 
       if (newUser !== null) {
@@ -62,7 +62,7 @@ class UserControllers {
       const totalUsers = parseInt(totalUsersResult.rows[0].count, 10);
 
       const usersResult = await db.query(
-        `SELECT * FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+        `SELECT *,TO_CHAR(dob, 'YYYY/MM/DD') as dob FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
         [limit, offset]
       );
 
@@ -101,7 +101,7 @@ class UserControllers {
         return res.apiError("User not found", 404);
       }
       const userDetail = userResult.rows[0];
-      return res.apiSuccess("User Detail Fetching", { userDetail }, 200);
+      return res.apiSuccess("User Detail Fetching", userDetail, 200);
     } catch (error) {
       return res.apiError("Something went wrong", 500);
     }
@@ -124,7 +124,7 @@ class UserControllers {
         return res.apiError("User not found", 404);
       }
 
-      return res.apiSuccess("User deleted successfully", null, 200);
+      return res.apiSuccess("User deleted successfully", 200);
     } catch (error) {
       return res.apiError("Something went wrong", 500);
     }
@@ -132,17 +132,11 @@ class UserControllers {
 
   editUserById = async (req, res) => {
     try {
+      // console.log(req.body);
       const userId = req.params.id;
-      const {
-        first_name,
-        last_name,
-        email,
-        phone,
-        dob,
-        gender,
-        address,
-        isAdmin,
-      } = req.body;
+
+      const { first_name, last_name, email, phone, dob, gender, address } =
+        req.body;
 
       if (userId == "") {
         return res.apiError("Missing user id", 403);
@@ -157,8 +151,8 @@ class UserControllers {
       }
 
       const userResult = await db.query(
-        `UPDATE users SET first_name = $1, last_name = $2, email = $3, phone = $4, dob = $5, gender = $6, address = $7, isAdmin = $8, updated_at = $9
-             WHERE id = $10 RETURNING id, first_name, last_name, email, phone, dob, gender, address, isAdmin`,
+        `UPDATE users SET first_name = $1, last_name = $2, email = $3, phone = $4, dob = $5, gender = $6, address = $7, updated_at = $8
+             WHERE id = $9 RETURNING id, first_name, last_name, email, phone, dob, gender, address`,
 
         [
           first_name,
@@ -168,14 +162,14 @@ class UserControllers {
           dob,
           gender,
           address,
-          isAdmin,
           new Date(),
           userId,
         ]
       );
 
       const updateUser = userResult.rows[0];
-      return res.apiSuccess("Fetching user after update", { updateUser }, 200);
+
+      return res.apiSuccess("Fetching user after update", updateUser, 200);
     } catch (error) {
       return res.apiError(`Something went wrong ${error.message}`, 500);
     }

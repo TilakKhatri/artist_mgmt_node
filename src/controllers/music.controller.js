@@ -73,7 +73,7 @@ class MusicControllers {
       }
 
       const musicDetail = musicResult.rows[0];
-      return res.apiSuccess("Music detail fetched", { musicDetail }, 200);
+      return res.apiSuccess("Music detail fetched", musicDetail, 200);
     } catch (error) {
       return res.apiError("Something went wrong", 500);
     }
@@ -125,11 +125,7 @@ class MusicControllers {
       );
 
       const updatedMusic = musicResult.rows[0];
-      return res.apiSuccess(
-        "Music updated successfully",
-        { updatedMusic },
-        200
-      );
+      return res.apiSuccess("Music updated successfully", updatedMusic, 200);
     } catch (error) {
       return res.apiError(`Something went wrong: ${error.message}`, 500);
     }
