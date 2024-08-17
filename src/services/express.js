@@ -7,6 +7,7 @@ async function ExpressApp(app) {
   app.use("/api/v1/auth", authRoutes);
   app.use(checkAuth);
   app.use("/api/v1/users", userRoutes);
+  app.use("/api/v1/artists", artistRoutes);
 }
 
 export default ExpressApp;
