@@ -1,5 +1,6 @@
 import authRoutes from "../routes/auth.route.js";
 import userRoutes from "../routes/user.route.js";
+import artistRoutes from "../routes/artist.route.js";
 import { checkAuth } from "../middlewares/authHandler.js";
 async function ExpressApp(app) {
   // @Desc importing routess

@@ -1,6 +1,6 @@
 import db from "../config/db.config.js";
 
-class ArtistController {
+class ArtistControllers {
   constructor() {}
 
   create = async (req, res) => {
@@ -56,6 +56,7 @@ class ArtistController {
       );
 
       const artists = artistResult.rows;
+      console.log(artists);
       // Calculate total pages
       const totalPages = Math.ceil(totalArtists / limit);
 
@@ -65,7 +66,7 @@ class ArtistController {
           artists,
           currentPage: page,
           totalPages,
-          totalUsers,
+          totalArtists,
           limit,
         },
         200
@@ -78,9 +79,10 @@ class ArtistController {
   getArtistById = async (req, res) => {
     try {
       const artistId = req.params.id;
-      const artistResult = await db.query(`SELECT * FROM users WHERE id = $1`, [
-        artistId,
-      ]);
+      const artistResult = await db.query(
+        `SELECT * FROM artists WHERE id = $1`,
+        [artistId]
+      );
       // Check if a user was found
       if (artistResult.rows.length === 0) {
         return res.apiError("Artist not found", 404);
@@ -132,8 +134,8 @@ class ArtistController {
       }
 
       const artistResult = await db.query(
-        `UPDATE artists SET name = $1, address = $2, first_release_year = $3, no_of_album_release = $4, dob = $5, gender = $6, updated_at = $9
-             WHERE id = $10 RETURNING *`,
+        `UPDATE artists SET name = $1, address = $2, first_release_year = $3, no_of_album_release = $4, dob = $5, gender = $6, updated_at = $7
+             WHERE id = $8 RETURNING *`,
 
         [
           name,
@@ -159,4 +161,4 @@ class ArtistController {
   };
 }
 
-export default UserControllers;
+export default ArtistControllers;
