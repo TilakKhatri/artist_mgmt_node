@@ -1,4 +1,4 @@
-const parseResponse = (statusCode, message, result) => {
+const parseResponse = (statusCode, message, result = []) => {
   const type = statusCode >= 200 && statusCode < 300 ? "success" : "error";
   const status_code = statusCode;
 

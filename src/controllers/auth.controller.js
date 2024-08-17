@@ -13,7 +13,7 @@ class AuthControllers {
     try {
       // Check if the email already exists
       const existingUser = await db.query(
-        "SELECT * FROM users WHERE email = $1",
+        "SELECT * FROM admin WHERE email = $1",
         [req.body.email]
       );
 
@@ -25,20 +25,10 @@ class AuthControllers {
       const hashedPassword = await GeneratePassword(req.body.password);
 
       const result = await db.query(
-        `INSERT INTO users (first_name, last_name, email, password, phone, dob, gender, address, isAdmin, created_at, updated_at) 
-              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()) 
-              RETURNING id, first_name, last_name, email, phone, dob, gender, address, isAdmin, created_at, updated_at`,
-        [
-          req.body.first_name,
-          req.body.last_name,
-          req.body.email,
-          hashedPassword,
-          req.body.phone,
-          req.body.dob,
-          req.body.gender,
-          req.body.address,
-          req.body.isAdmin,
-        ]
+        `INSERT INTO admin (username, email, password) 
+              VALUES ($1, $2, $3) 
+              RETURNING id, username, email`,
+        [req.body.username, req.body.email, hashedPassword]
       );
 
       const newUser = result.rows[0];
@@ -59,16 +49,17 @@ class AuthControllers {
 
       // check user exists or not
       const userExists = await db.query(
-        "SELECT * FROM users WHERE email = $1",
+        "SELECT * FROM admin WHERE email = $1",
         [email]
       );
 
       if (userExists.rows.length < 1) {
-        return res.apiError("user does not exists", 404);
+        return res.apiError("admin does not exists", 404);
       } else {
         const user = userExists.rows[0];
+        console.log(user);
         const validate = await PasswordValidation(user.password, password);
-
+        console.log(validate);
         if (validate === false) {
           return res.apiError("Email or Password incorrect.", 403);
         }
@@ -76,15 +67,13 @@ class AuthControllers {
         const token = await GenerateToken({
           _id: user.id,
           email: user.email,
-          fullName: user.first_name + user.last_name,
-          isAdmin: user.isAdmin,
+          username: user.username,
         });
         return res.apiSuccess(
           "Login successfully",
           {
             email: user.email,
-            fullName: user.first_name + " " + user.last_name,
-            isAdmin: user.isAdmin,
+            username: user.username,
             token,
           },
           200

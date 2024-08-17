@@ -1,3 +1,17 @@
+
+-- admin table
+CREATE TABLE admin(
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+);
+
+-- Insert into admin table
+INSERT INTO admin (username,email,password) VALUES ('adminUser',"admin@gmail.com","hello12@34");
+
+
+
 -- create new user table
 CREATE TABLE users (
                 id SERIAL PRIMARY KEY,

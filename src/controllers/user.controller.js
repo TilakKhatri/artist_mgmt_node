@@ -162,11 +162,9 @@ class UserControllers {
           userId,
         ]
       );
-      console.log(userResult);
 
       const updateUser = userResult.rows[0];
       return res.apiSuccess("Fetching user after update", { updateUser }, 200);
-      return;
     } catch (error) {
       return res.apiError(`Something went wrong ${error.message}`, 500);
     }
