@@ -5,10 +5,11 @@ class ArtistControllers {
 
   create = async (req, res) => {
     try {
+      // console.log(req.body);
       // Check if the email already exists
       const existingArtist = await db.query(
-        "SELECT * FROM artists WHERE email = $1",
-        [req.body.email]
+        "SELECT * FROM artists WHERE name = $1",
+        [req.body.name]
       );
 
       if (existingArtist.rows.length > 0) {
@@ -16,7 +17,7 @@ class ArtistControllers {
       }
 
       const result = await db.query(
-        `INSERT INTO users (name, address, first_release_year, no_of_album_release, dob, gender) 
+        `INSERT INTO artists (name, address, first_release_year, no_of_album_release, dob, gender) 
                 VALUES ($1, $2, $3, $4, $5, $6) 
                 RETURNING id, name, address, first_release_year, no_of_album_release, dob, gender`,
         [
@@ -30,12 +31,33 @@ class ArtistControllers {
       );
 
       const newArtist = result.rows[0];
-
+      // console.log(newArtist);
       if (newArtist !== null) {
         return res.apiSuccess("Artist created sucessful", newArtist, 201);
       } else {
         return new Error("Database error");
       }
+    } catch (error) {
+      return res.apiError("Something went wrong", 500);
+    }
+  };
+
+  getArtistCreation = async (req, res) => {
+    try {
+      const artistId = req.params.id;
+      const artistResult = await db.query(
+        `SELECT * FROM artists WHERE id = $1`,
+        [artistId]
+      );
+      // Check if a user was found
+      if (artistResult.rows.length === 0) {
+        return res.apiError("Artist not found", 404);
+      }
+      const query = `SELECT m.id,m.title,m.album_name,m.genre FROM music m inner join artists ar on m.artist_id = ar.id where ar.id=$1`;
+      const result = await db.query(query, [artistId]);
+
+      const artistCreation = result.rows;
+      return res.apiSuccess("Artist Creation Fetching", artistCreation, 200);
     } catch (error) {
       return res.apiError("Something went wrong", 500);
     }
@@ -56,7 +78,7 @@ class ArtistControllers {
       );
 
       const artists = artistResult.rows;
-      console.log(artists);
+      // console.log(artists);
       // Calculate total pages
       const totalPages = Math.ceil(totalArtists / limit);
 

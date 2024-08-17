@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "bcrypt": "^5.1.1",
+    "express-requests-logger": "^4.0.1",
     "http-status-codes": "^2.3.0",
     "nodemon": "^3.1.4"
   }

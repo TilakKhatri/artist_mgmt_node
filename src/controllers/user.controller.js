@@ -10,6 +10,7 @@ class UserControllers {
 
   create = async (req, res) => {
     try {
+      console.log("form post ", req.body);
       // Check if the email already exists
       const existingUser = await db.query(
         "SELECT * FROM users WHERE email = $1",
@@ -19,14 +20,14 @@ class UserControllers {
       if (existingUser.rows.length > 0) {
         return res.apiError("Email already exists", 400);
       }
-
       // hash password using bcrypt
       const hashedPassword = await GeneratePassword(req.body.password);
+      console.log(hashedPassword);
 
       const result = await db.query(
-        `INSERT INTO users (first_name, last_name, email, password, phone, dob, gender, address, isAdmin, created_at, updated_at) 
+        `INSERT INTO users (first_name, last_name, email, password, phone, dob, gender, address, created_at, updated_at) 
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()) 
-                RETURNING id, first_name, last_name, email, phone, dob, gender, address, isAdmin, created_at, updated_at`,
+                RETURNING id, first_name, last_name, email, phone, dob, gender, address, created_at, updated_at`,
         [
           req.body.first_name,
           req.body.last_name,
@@ -36,10 +37,9 @@ class UserControllers {
           req.body.dob,
           req.body.gender,
           req.body.address,
-          req.body.isAdmin,
         ]
       );
-
+      console.log(result);
       const newUser = result.rows[0];
 
       if (newUser !== null) {
@@ -89,6 +89,9 @@ class UserControllers {
   getUserById = async (req, res) => {
     try {
       const userId = req.params.id;
+      if (userId == "") {
+        return res.apiError("Missing user id", 403);
+      }
       const userResult = await db.query(
         `SELECT id, first_name,last_name,email,email,phone,address,gender,isAdmin FROM users WHERE id = $1`,
         [userId]
@@ -107,6 +110,11 @@ class UserControllers {
   deleteUserById = async (req, res) => {
     try {
       const userId = req.params.id;
+
+      if (userId == "") {
+        return res.apiError("Missing user id", 403);
+      }
+
       const userResult = await db.query(
         `DELETE FROM users where id = $1 RETURNING id`,
         [userId]
@@ -136,6 +144,9 @@ class UserControllers {
         isAdmin,
       } = req.body;
 
+      if (userId == "") {
+        return res.apiError("Missing user id", 403);
+      }
       const existingUserResult = await db.query(
         "SELECT * FROM users WHERE id = $1",
         [userId]
