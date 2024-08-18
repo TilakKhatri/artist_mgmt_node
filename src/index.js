@@ -1,4 +1,6 @@
 import express from "express";
+import path from "path";
+import fs from "fs";
 import dotenv from "dotenv";
 import cors from "cors";
 import audit from "express-requests-logger";
@@ -18,6 +20,8 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  // app.use("/static", express.static(path.join(__dirname, "public")));
 
   // @DESC middleware setups
   app.use(responseHandler);

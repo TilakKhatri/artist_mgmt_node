@@ -45,24 +45,44 @@ class ArtistControllers {
   getArtistCreation = async (req, res) => {
     try {
       const artistId = req.params.id;
+      const page = parseInt(req.query.page, 10) || 1;
+      const limit = parseInt(req.query.limit, 10) || 10;
+      const offset = (page - 1) * limit;
 
       const artistResult = await db.query(
         `SELECT *,TO_CHAR(artists.dob,'YYYY-MM-DD') AS dob FROM artists WHERE id = $1`,
         [artistId]
       );
-
+      // console.log(artistResult.rows[0]);
       // Check if a user was found
       if (artistResult.rows.length === 0) {
         return res.apiError("Artist not found", 404);
       }
       const query = `SELECT m.id,m.title,m.album_name,m.genre FROM music m inner join artists ar on m.artist_id = ar.id where ar.id=$1`;
-      const result = await db.query(query, [artistId]);
-      const artist = artistResult.rows[0];
-      const artistCreation = result.rows;
+      const countTotalcreation = await db.query(query, [artistId]);
 
+      const artist = artistResult.rows[0];
+      const totalCreations = parseInt(countTotalcreation.rows.length, 10);
+
+      // do apply limit and offset
+      const myCreations = await db.query(
+        `SELECT m.id,m.title,m.album_name,m.genre FROM music m inner join artists ar on m.artist_id = ar.id where ar.id=$1 LIMIT $2 OFFSET $3`,
+        [artistId, limit, offset]
+      );
+
+      const myCreationItems = myCreations.rows;
+      const totalPages = Math.ceil(totalCreations / limit);
+      // console.log(totalCreations, artist, limit, offset, totalPages);
       return res.apiSuccess(
         "Artist Creation Fetching",
-        { artist: artist, musics: artistCreation },
+        {
+          artist: artist,
+          musics: myCreationItems,
+          currentPage: page,
+          totalPages,
+          totalCreations,
+          limit,
+        },
         200
       );
     } catch (error) {

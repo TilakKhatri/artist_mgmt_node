@@ -3,6 +3,7 @@ import userRoutes from "../routes/user.route.js";
 import artistRoutes from "../routes/artist.route.js";
 import musicRoutes from "../routes/music.route.js";
 import { checkAuth } from "../middlewares/authHandler.js";
+
 async function ExpressApp(app) {
   // logger
   app.use((req, res, next) => {
