@@ -27,7 +27,7 @@ class UserControllers {
       const result = await db.query(
         `INSERT INTO users (first_name, last_name, email, password, phone, dob, gender, address, created_at, updated_at) 
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) 
-                RETURNING id, first_name, last_name, email, phone, TO_CHAR(dob, 'YYYY/MM/DD') AS dob, gender, address, created_at, updated_at`,
+                RETURNING id, first_name, last_name, email, phone, TO_CHAR(dob, 'YYYY-MM-DD') AS dob, gender, address, created_at, updated_at`,
         [
           req.body.first_name,
           req.body.last_name,
@@ -62,7 +62,7 @@ class UserControllers {
       const totalUsers = parseInt(totalUsersResult.rows[0].count, 10);
 
       const usersResult = await db.query(
-        `SELECT *,TO_CHAR(dob, 'YYYY/MM/DD') as dob FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+        `SELECT *,TO_CHAR(dob, 'YYYY-MM-DD') as dob FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
         [limit, offset]
       );
 
@@ -152,7 +152,7 @@ class UserControllers {
 
       const userResult = await db.query(
         `UPDATE users SET first_name = $1, last_name = $2, email = $3, phone = $4, dob = $5, gender = $6, address = $7, updated_at = $8
-             WHERE id = $9 RETURNING id, first_name, last_name, email, phone, dob, gender, address`,
+             WHERE id = $9 RETURNING id, first_name, last_name, email, phone, TO_CHAR(dob, 'YYYY-MM-DD') as dob, gender, address`,
 
         [
           first_name,

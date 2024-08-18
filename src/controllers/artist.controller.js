@@ -19,7 +19,7 @@ class ArtistControllers {
       const result = await db.query(
         `INSERT INTO artists (name, address, first_release_year, no_of_album_release, dob, gender) 
                 VALUES ($1, $2, $3, $4, $5, $6) 
-                RETURNING id, name, address, first_release_year, no_of_album_release, TO_CHAR(dob, 'YYYY/MM/DD') AS dob, gender`,
+                RETURNING id, name, address, first_release_year, no_of_album_release, TO_CHAR(dob, 'YYYY-MM-DD') AS dob, gender`,
         [
           req.body.name,
           req.body.address,
@@ -45,19 +45,26 @@ class ArtistControllers {
   getArtistCreation = async (req, res) => {
     try {
       const artistId = req.params.id;
+
       const artistResult = await db.query(
-        `SELECT * FROM artists WHERE id = $1`,
+        `SELECT *,TO_CHAR(artists.dob,'YYYY-MM-DD') AS dob FROM artists WHERE id = $1`,
         [artistId]
       );
+
       // Check if a user was found
       if (artistResult.rows.length === 0) {
         return res.apiError("Artist not found", 404);
       }
       const query = `SELECT m.id,m.title,m.album_name,m.genre FROM music m inner join artists ar on m.artist_id = ar.id where ar.id=$1`;
       const result = await db.query(query, [artistId]);
-
+      const artist = artistResult.rows[0];
       const artistCreation = result.rows;
-      return res.apiSuccess("Artist Creation Fetching", artistCreation, 200);
+
+      return res.apiSuccess(
+        "Artist Creation Fetching",
+        { artist: artist, musics: artistCreation },
+        200
+      );
     } catch (error) {
       return res.apiError("Something went wrong", 500);
     }
@@ -73,7 +80,7 @@ class ArtistControllers {
       const totalArtists = parseInt(totalArtistsResult.rows[0].count, 10);
 
       const artistResult = await db.query(
-        `SELECT *,TO_CHAR(dob, 'YYYY/MM/DD') AS dob FROM artists ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+        `SELECT *,TO_CHAR(dob, 'YYYY-MM-DD') AS dob FROM artists ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
         [limit, offset]
       );
 
@@ -102,7 +109,7 @@ class ArtistControllers {
     try {
       const artistId = req.params.id;
       const artistResult = await db.query(
-        `SELECT *,TO_CHAR(dob, 'YYYY/MM/DD') AS dob FROM artists WHERE id = $1`,
+        `SELECT *,TO_CHAR(dob, 'YYYY-MM-DD') AS dob FROM artists WHERE id = $1`,
         [artistId]
       );
       // Check if a user was found
@@ -157,7 +164,7 @@ class ArtistControllers {
 
       const artistResult = await db.query(
         `UPDATE artists SET name = $1, address = $2, first_release_year = $3, no_of_album_release = $4, dob = $5, gender = $6, updated_at = $7
-             WHERE id = $8 RETURNING *,TO_CHAR(dob, 'YYYY/MM/DD') AS dob`,
+             WHERE id = $8 RETURNING *,TO_CHAR(dob, 'YYYY-MM-DD') AS dob`,
 
         [
           name,
