@@ -16,6 +16,7 @@ class AuthControllers {
         "SELECT * FROM admin WHERE email = $1",
         [req.body.email]
       );
+      // console.log(existingUser);
 
       if (existingUser.rows.length > 0) {
         return res.apiError("Email already exists", 400);
@@ -32,6 +33,7 @@ class AuthControllers {
       );
 
       const newUser = result.rows[0];
+      // console.log(newUser);
 
       if (newUser !== null) {
         return res.apiSuccess("Account created sucessful", newUser, 201);
@@ -57,7 +59,7 @@ class AuthControllers {
         return res.apiError("admin does not exists", 404);
       } else {
         const user = userExists.rows[0];
-        console.log(user);
+        // console.log(user);
         const validate = await PasswordValidation(user.password, password);
         console.log(validate);
         if (validate === false) {

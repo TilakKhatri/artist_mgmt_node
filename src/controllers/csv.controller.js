@@ -6,25 +6,23 @@ import { Parser } from "@json2csv/plainjs";
 import { validateRow, validateHeaders } from "../validators/rowValidator.js";
 
 const importCsv = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.apiError("Please enter file", 400);
-    }
-    const results = [];
-    const errors = [];
-    const existingNames = new Set();
+  if (!req.file) {
+    return res.apiError("Please enter file", 400);
+  }
 
-    fs.createReadStream(req.file.path)
-      .pipe(parse({ columns: true, skip_empty_lines: true })) // Parse CSV data with headers as columns
-      // .on("headers", (headers) => {
-      //   console.log(headers);
-      //   headersValid = validateHeaders(headers);
-      //   if (!headersValid) {
-      //     this.emit("error", new Error("Invalid CSV headers"));
-      //   }
-      // })
+  const results = [];
+  const errors = [];
+  const existingNames = new Set();
+
+  const filePath = req.file.path;
+
+  try {
+    // Create a read stream for the CSV file
+    const fileStream = fs.createReadStream(filePath);
+
+    fileStream
+      .pipe(parse({ columns: true, skip_empty_lines: true }))
       .on("data", (row) => {
-        // validating each row of csv to check they match with our schema or not
         const validationErrors = validateRow(row);
         if (validationErrors.length > 0) {
           errors.push({ row, errors: validationErrors });
@@ -32,16 +30,17 @@ const importCsv = async (req, res) => {
           results.push(row);
         }
       })
-
       .on("end", async () => {
         if (errors.length > 0) {
-          fs.unlinkSync(req.file.path);
+          fs.unlink(filePath, (unlinkErr) => {
+            if (unlinkErr) console.error("Error deleting file:", unlinkErr);
+          });
           return res.apiError("Invalid file uploaded", 400);
         }
-        const client = await db.connect();
 
+        let client;
         try {
-          // Fetch existing names from the database
+          client = await db.connect();
           const existingNamesResult = await client.query(
             "SELECT name FROM artists"
           );
@@ -49,19 +48,19 @@ const importCsv = async (req, res) => {
             existingNames.add(row.name)
           );
 
-          // Filter out rows with existing names
           const filteredResults = results.filter(
             (row) => !existingNames.has(row.name)
           );
 
           if (filteredResults.length === 0) {
-            fs.unlinkSync(req.file.path);
-            return res
-              .status(400)
-              .json({ message: "No new unique names to insert." });
+            fs.unlink(filePath, (unlinkErr) => {
+              if (unlinkErr) console.error("Error deleting file:", unlinkErr);
+            });
+            return res.apiError("No new unique names to insert.", 400);
           }
 
           await client.query("BEGIN");
+
           for (const row of filteredResults) {
             await client.query(
               "INSERT INTO artists (name, address, first_release_year, no_of_album_release, dob, gender) VALUES ($1, $2, $3, $4, $5, $6)",
@@ -75,23 +74,47 @@ const importCsv = async (req, res) => {
               ]
             );
           }
+
           await client.query("COMMIT");
           return res.apiSuccess("Inserted successfully", results, 201);
         } catch (error) {
-          await client.query("ROLLBACK");
-          console.error("Error importing data:", error?.message);
+          if (client) {
+            try {
+              await client.query("ROLLBACK");
+            } catch (rollbackErr) {
+              console.error("Error during rollback:", rollbackErr);
+            }
+          }
+          console.error("Error importing data:", error.message);
           return res.apiError(
-            "Your dataset name must be unique" || error?.message,
+            "Your dataset name must be unique" || error.message,
             500
           );
         } finally {
-          client.release();
-          fs.unlinkSync(req.file.path);
+          if (client) client.release();
+          fs.unlink(filePath, (unlinkErr) => {
+            if (unlinkErr) console.error("Error deleting file:", unlinkErr);
+          });
         }
+      })
+      .on("error", (err) => {
+        console.error("Error parsing CSV:", err);
+        fs.unlink(filePath, (unlinkErr) => {
+          if (unlinkErr) console.error("Error deleting file:", unlinkErr);
+        });
+        res.apiError("Failed to process the file", 500);
       });
   } catch (error) {
-    console.log("Error", error?.message);
-    return res.apiError("Something went wrong" || error?.message, 500);
+    console.error("Error during CSV processing:", error.message);
+
+    try {
+      await fs.promises.access(filePath); // Check if file exists
+      await fs.promises.unlink(filePath); // Delete file
+    } catch (err) {
+      // File might not exist or could not be deleted
+      console.error("Error deleting file:", err.message);
+    }
+    return res.apiError("Something went wrong" || error.message, 500);
   }
 };
 
@@ -100,7 +123,7 @@ const exportCSV = async (req, res) => {
     const result = await db.query("SELECT * FROM artists");
 
     if (result.rows.length === 0) {
-      return res.apiError("No artist data found", 404);
+      return res.apiError(" artist data not found", 404);
     }
 
     const jsonData = result.rows;
