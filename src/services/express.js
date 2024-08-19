@@ -2,6 +2,7 @@ import authRoutes from "../routes/auth.route.js";
 import userRoutes from "../routes/user.route.js";
 import artistRoutes from "../routes/artist.route.js";
 import musicRoutes from "../routes/music.route.js";
+import ananlyticsRoutes from "../routes/analytics.route.js";
 import { checkAuth } from "../middlewares/authHandler.js";
 
 async function ExpressApp(app) {
@@ -18,6 +19,7 @@ async function ExpressApp(app) {
   app.use("/api/v1/users", userRoutes);
   app.use("/api/v1/artists", artistRoutes);
   app.use("/api/v1/music", musicRoutes);
+  app.use("/api/v1/analytics", ananlyticsRoutes);
 }
 
 export default ExpressApp;
